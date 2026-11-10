@@ -1,0 +1,149 @@
+item_code,item,class
+1,Rice,Cereals and cereal products
+2,Wheat,Cereals and cereal products
+3,Jowar and its products,Cereals and cereal products
+4,Ragi and its products,Cereals and cereal products
+5,Bajra and its products,Cereals and cereal products
+6,Maize and its products,Cereals and cereal products
+7,Small millets and its products,Cereals and cereal products
+8,Barley and its products,Cereals and cereal products
+9,Other cereals and products,Cereals and cereal products
+10,Other wheat products,Cereals and cereal products
+11,Rice PDS,Cereals and cereal products
+12,Wheat PDS,Cereals and cereal products
+13,Wheat atta,Cereals and cereal products
+14,Maida,Cereals and cereal products
+15,Wheat atta PDS,Cereals and cereal products
+16,Biscuits,Cereals and cereal products
+17,"Chips , nachos, puffs, wafers, etc.",Cereals and cereal products
+18,"Cake, pastry",Cereals and cereal products
+19,Bread (bakery),Cereals and cereal products
+20,Breakfast cereals,Cereals and cereal products
+21,Muri,Cereals and cereal products
+22,Other rice products,Cereals and cereal products
+23,Noodles,Cereals and cereal products
+24,Vermicelli (sewai),Cereals and cereal products
+25,"Suji, rawa",Cereals and cereal products
+26,Chidwa,Cereals and cereal products
+27,Chicken,"Meat, fresh, chilled or frozen"
+28,Goat meat/ mutton,"Meat, fresh, chilled or frozen"
+29,Beef/ buffalo meat,"Meat, fresh, chilled or frozen"
+30,Pork,"Meat, fresh, chilled or frozen"
+31,"Others: birds, crab,oyster, etc.","Meat, fresh, chilled or frozen"
+32,Fish and prawn,Fish and other seafood
+33,Milk: liquid,"Milk, other dairy products and eggs"
+34,Milk: condensed/ powder,"Milk, other dairy products and eggs"
+35,Paneer,"Milk, other dairy products and eggs"
+36,Cheese,"Milk, other dairy products and eggs"
+37,"Curd, yogurt","Milk, other dairy products and eggs"
+38,Butter milk,"Milk, other dairy products and eggs"
+39,Lassi,"Milk, other dairy products and eggs"
+40,Tea: cups,"Milk, other dairy products and eggs"
+41,Prepared sweets- milk based,"Milk, other dairy products and eggs"
+42,Coffee: cups,"Milk, other dairy products and eggs"
+43,Eggs,"Milk, other dairy products and eggs"
+44,Other milk products,"Milk, other dairy products and eggs"
+45,Refined oil,Oils and fats
+46,Mustard oil,Oils and fats
+47,Groundnut oil,Oils and fats
+48,Coconut oil,Oils and fats
+49,Edible oil,Oils and fats
+50,Edible oil PDS,Oils and fats
+51,Ghee,Oils and fats
+52,Butter,Oils and fats
+53,Vanaspati and margarine,Oils and fats
+54,Banana,Fruits and nuts
+55,Mango,Fruits and nuts
+56,Green coconut,Fruits and nuts
+57,Coconut,Fruits and nuts
+58,Papaya,Fruits and nuts
+59,Guava,Fruits and nuts
+60,Pineapple,Fruits and nuts
+61,Fig: anjeer,Fruits and nuts
+62,Orange and sweet lime (mausami),Fruits and nuts
+63,Lemon,Fruits and nuts
+64,Apple,Fruits and nuts
+65,Litchi,Fruits and nuts
+66,Pears/ nashpati,Fruits and nuts
+67,Apricot,Fruits and nuts
+68,Berries,Fruits and nuts
+69,Grapes,Fruits and nuts
+70,Watermelon,Fruits and nuts
+71,Kharbooza,Fruits and nuts
+72,Singara,Fruits and nuts
+73,Other fresh fruits,Fruits and nuts
+74,Dates,Fruits and nuts
+75,Raisin (kishmish) and monacca,Fruits and nuts
+76,Coconut: copra,Fruits and nuts
+77,Other dry fruits,Fruits and nuts
+78,Groundnut,Fruits and nuts
+79,Cashew nut,Fruits and nuts
+80,Other nuts,Fruits and nuts
+81,Cauliflower,"Vegetables, tubers, plantains, cooking bananas and pulses"
+82,Cabbage,"Vegetables, tubers, plantains, cooking bananas and pulses"
+83,Palak and other leafy vegetables,"Vegetables, tubers, plantains, cooking bananas and pulses"
+84,Tomato,"Vegetables, tubers, plantains, cooking bananas and pulses"
+85,Lady's finger,"Vegetables, tubers, plantains, cooking bananas and pulses"
+86,Brinjal,"Vegetables, tubers, plantains, cooking bananas and pulses"
+87,Green chillies,"Vegetables, tubers, plantains, cooking bananas and pulses"
+88,"Gourd, pumpkin","Vegetables, tubers, plantains, cooking bananas and pulses"
+89,Parwal/patal and Kundru,"Vegetables, tubers, plantains, cooking bananas and pulses"
+90,Beans and Barbati,"Vegetables, tubers, plantains, cooking bananas and pulses"
+91,Peas,"Vegetables, tubers, plantains, cooking bananas and pulses"
+92,Onion,"Vegetables, tubers, plantains, cooking bananas and pulses"
+93,Garlic,"Vegetables, tubers, plantains, cooking bananas and pulses"
+94,Carrot,"Vegetables, tubers, plantains, cooking bananas and pulses"
+95,Radish,"Vegetables, tubers, plantains, cooking bananas and pulses"
+96,Jackfruit,"Vegetables, tubers, plantains, cooking bananas and pulses"
+97,Other vegetables,"Vegetables, tubers, plantains, cooking bananas and pulses"
+98,Potato,"Vegetables, tubers, plantains, cooking bananas and pulses"
+99,"Arhar, tur","Vegetables, tubers, plantains, cooking bananas and pulses"
+100,Moong,"Vegetables, tubers, plantains, cooking bananas and pulses"
+101,Urd,"Vegetables, tubers, plantains, cooking bananas and pulses"
+102,Masur,"Vegetables, tubers, plantains, cooking bananas and pulses"
+103,Gram: split,"Vegetables, tubers, plantains, cooking bananas and pulses"
+104,Gram: whole,"Vegetables, tubers, plantains, cooking bananas and pulses"
+105,"Peas, chickpeas","Vegetables, tubers, plantains, cooking bananas and pulses"
+106,Other pulses,"Vegetables, tubers, plantains, cooking bananas and pulses"
+107,Pulses PDS,"Vegetables, tubers, plantains, cooking bananas and pulses"
+108,Besan and Gram products,"Vegetables, tubers, plantains, cooking bananas and pulses"
+109,Pickles,"Vegetables, tubers, plantains, cooking bananas and pulses"
+110,Other pulse products,"Vegetables, tubers, plantains, cooking bananas and pulses"
+111,Sugar,"Sugar, confectionery and desserts"
+112,Jaggery (gur),"Sugar, confectionery and desserts"
+113,Sugar PDS,"Sugar, confectionery and desserts"
+114,Jam/ jelly,"Sugar, confectionery and desserts"
+115,Honey,"Sugar, confectionery and desserts"
+116,"Chocolates, etc.","Sugar, confectionery and desserts"
+117,Ice-cream,"Sugar, confectionery and desserts"
+118,Prepared sweets - non milk based,"Sugar, confectionery and desserts"
+119,"Candy, misri","Sugar, confectionery and desserts"
+120,Other served processed food,Ready-made food and other food products
+121,Other packaged processed food,Ready-made food and other food products
+122,Baby food,Ready-made food and other food products
+123,Salt,Ready-made food and other food products
+124,Sauce and Mayonnaise,Ready-made food and other food products
+125,Salt PDS,Ready-made food and other food products
+126,Dry chillies,Ready-made food and other food products
+127,Cumin (jeera),Ready-made food and other food products
+128,Coriander (dhania),Ready-made food and other food products
+129,Ginger,Ready-made food and other food products
+130,Turmeric,Ready-made food and other food products
+131,Curry powder,Ready-made food and other food products
+132,Black pepper,Ready-made food and other food products
+133,Tamarind,Ready-made food and other food products
+134,Oilseeds,Ready-made food and other food products
+135,Poppy seeds,Ready-made food and other food products
+136,Other spices,Ready-made food and other food products
+137,"Papad, bhujia, namkeen, mixture and chanachur",Ready-made food and other food products
+138,Health supplements (probiotic tablet and drinks),Ready-made food and other food products
+139,Fruit juice,Fruit and vegetable juices
+140,Coffee: powder,Coffee and coffee substitutes
+141,Tea: leaf,"Tea, maté and other plant-derived products for infusion"
+142,Health drinks,Other beverages
+143,Beverages: cocoa and chocolate drink,Cocoa drinks
+144,Packaged water,Water
+145,Soda drinks,Soft drinks
+146,Health supplements (protein powder),Other beverages
+147,Other cold beverages,Other beverages
+148,Grinding/ husking charges,Services for processing primary goods for food

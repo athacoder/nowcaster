@@ -1,0 +1,43 @@
+dca_commodity,wfp_commodity,cpi2024_item_code,cpi2024_item,cpi2012_subgroup,match,note
+Rice,Rice,1,Rice,Cereals and Products,exact,
+Broken Rice,,1,Rice,Cereals and Products,broad,A grade of rice; CPI has no separate item
+Wheat,Wheat,2,Wheat,Cereals and Products,exact,
+Atta (Wheat),Wheat flour,13,Wheat atta,Cereals and Products,exact,
+Maida (wheat),Wheat flour (refined),14,Maida,Cereals and Products,exact,
+"Suji (whole)",Semolina,25,"Suji, rawa",Cereals and Products,exact,
+Bajra (whole),Millet (bulrush),5,Bajra and its products,Cereals and Products,exact,
+Jowar (whole),Sorghum,3,Jowar and its products,Cereals and Products,exact,
+Ragi (whole),Millet (finger),4,Ragi and its products,Cereals and Products,exact,
+Gram Dal,,103,Gram: split,Pulses and Products,exact,WFP 'Chickpeas' ends in 2020
+Gram Dal(Bharat Dal Adjusted),,,,,none,Subsidy-adjusted variant of Gram Dal; not used
+Tur/Arhar Dal,Lentils,99,"Arhar, tur",Pulses and Products,exact,WFP name inferred from the price level (Oct 2026: 130 vs 128)
+Urad Dal,Lentils (urad),101,Urd,Pulses and Products,exact,
+Moong Dal,Lentils (moong),100,Moong,Pulses and Products,exact,
+Masoor Dal,Lentils (masur),102,Masur,Pulses and Products,exact,
+Besan,Chickpea (flour),108,Besan and Gram products,Pulses and Products,exact,
+Sugar,Sugar,111,Sugar,Sugar and Confectionery,exact,
+Gur,Sugar (jaggery/gur),112,Jaggery (gur),Sugar and Confectionery,exact,
+Milk (₹/ltr),Milk (pasteurized),33,Milk: liquid,Milk and Products,exact,
+Desi Ghee,Ghee (desi),51,Ghee,Oils and Fats,exact,
+Butter (Pasteurised),Butter,52,Butter,Oils and Fats,exact,
+Groundnut Oil (Packed),Oil (groundnut),47,Groundnut oil,Oils and Fats,exact,
+Mustard Oil (Packed),Oil (mustard),46,Mustard oil,Oils and Fats,exact,
+Vanaspati (Packed),Ghee (vanaspati),53,Vanaspati and margarine,Oils and Fats,exact,
+Soya Oil (Packed),Oil (soybean),45,Refined oil,Oils and Fats,broad,One of several oils inside the CPI item
+Sunflower Oil (Packed),Oil (sunflower),45,Refined oil,Oils and Fats,broad,One of several oils inside the CPI item
+Palm Oil (Packed),Oil (palm),45,Refined oil,Oils and Fats,broad,Assumed to sit under refined oil; not confirmed in MoSPI's item notes
+Tea Loose,Tea (black),141,Tea: leaf,Non-alcoholic Beverages,exact,
+Salt Pack (Iodised),Salt (iodised),123,Salt,Spices,exact,
+Potato,Potatoes,98,Potato,Vegetables,exact,
+Onion,Onions,92,Onion,Vegetables,exact,
+Tomato,Tomatoes,84,Tomato,Vegetables,exact,
+Brinjal,Eggplants,86,Brinjal,Vegetables,exact,
+Garlic,Garlic,93,Garlic,Vegetables,exact,
+Ginger,Ginger,129,Ginger,Vegetables,exact,
+Eggs,Eggs,43,Eggs,Egg,exact,
+Banana,Bananas,54,Banana,Fruits,exact,
+Black Pepper (whole),"Peppers (black, whole)",132,Black pepper,Spices,exact,
+Coriander (whole),Coriander seeds (whole),128,Coriander (dhania),Spices,exact,
+Cummin Seed (whole),Cumin seeds (whole),127,Cumin (jeera),Spices,exact,
+Red Chillies (whole),"Chili (red, dry raw)",126,Dry chillies,Spices,exact,
+Turmeric (powder),Turmeric (powder),130,Turmeric,Spices,exact,
