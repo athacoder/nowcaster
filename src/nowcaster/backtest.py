@@ -7,6 +7,7 @@ import pandas as pd
 from scipy import stats
 
 from nowcaster.baselines import Forecaster
+from nowcaster.models import FeatureForecaster
 
 
 def run(series: pd.Series, models: dict[str, Forecaster], first: pd.Period) -> pd.DataFrame:
@@ -22,6 +23,25 @@ def run(series: pd.Series, models: dict[str, Forecaster], first: pd.Period) -> p
         row: dict[str, object] = {"period": target, "actual": float(series[target])}
         for name, model in models.items():
             row[name] = model(history)
+        rows.append(row)
+    return pd.DataFrame(rows).set_index("period")
+
+
+def run_with_features(
+    series: pd.Series,
+    features: pd.DataFrame,
+    models: dict[str, FeatureForecaster],
+    first: pd.Period,
+) -> pd.DataFrame:
+    """Like `run`, for models that also see price features: the rows for months before
+    the target, and the target month's own row. Nothing later than the target month."""
+    rows = []
+    for target in series.index[series.index >= first]:
+        history = series[series.index < target]
+        past = features[features.index < target]
+        row: dict[str, object] = {"period": target}
+        for name, model in models.items():
+            row[name] = model(history, past, features.loc[target])
         rows.append(row)
     return pd.DataFrame(rows).set_index("period")
 

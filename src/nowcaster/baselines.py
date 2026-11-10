@@ -4,6 +4,7 @@ by month, ending the month before the target) and returns a forecast for the nex
 
 import warnings
 from collections.abc import Callable
+from typing import Any
 
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
@@ -22,16 +23,17 @@ def seasonal_mean(history: pd.Series) -> float:
     return float(history[pd.PeriodIndex(history.index).month == target_month].mean())
 
 
-def arima(history: pd.Series) -> float:
-    """Airline model: SARIMA(0,1,1)(0,1,1)12 on the log index, i.e. MA terms on the
-    seasonally differenced month-on-month change. The order is fixed, never tuned on the
-    backtest."""
-    values = history.to_numpy(dtype=float)
-    model = SARIMAX(values, order=(0, 0, 1), seasonal_order=(0, 1, 1, 12), trend="n")
+def fit_airline(values: Any, exog: Any = None) -> Any:
+    """Airline model, SARIMA(0,1,1)(0,1,1)12 on the log index: MA terms on the seasonally
+    differenced month-on-month change. The order is fixed, never tuned on the backtest."""
+    model = SARIMAX(values, exog=exog, order=(0, 0, 1), seasonal_order=(0, 1, 1, 12), trend="n")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        fitted = model.fit(disp=False)
-    return float(fitted.forecast(1)[0])
+        return model.fit(disp=False)
+
+
+def arima(history: pd.Series) -> float:
+    return float(fit_airline(history.to_numpy(dtype=float)).forecast(1)[0])
 
 
 BASELINES: dict[str, Forecaster] = {

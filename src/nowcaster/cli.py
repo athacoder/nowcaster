@@ -6,7 +6,18 @@ from pathlib import Path
 
 import pandas as pd
 
-from nowcaster import __version__, backtest, baselines, dca, mapping, mospi, target, wfp
+from nowcaster import (
+    __version__,
+    backtest,
+    baselines,
+    dca,
+    features,
+    mapping,
+    models,
+    mospi,
+    target,
+    wfp,
+)
 from nowcaster.http import PoliteClient
 
 RAW = Path("data/raw")
@@ -46,28 +57,35 @@ def _check(args: argparse.Namespace) -> int:
 
 def _backtest(args: argparse.Namespace) -> int:
     series = target.food_mom(mospi.load_2012(RAW / "mospi"), mospi.load_2024(RAW / "mospi"))
-    forecasts = backtest.run(series, baselines.BASELINES, FIRST_FORECAST)
+    price_index, _ = wfp.national_index(wfp.load(RAW / "wfp" / "wfp_food_prices_ind.csv"))
+    table = features.build(price_index)
+    forecasts = backtest.run(series, baselines.BASELINES, FIRST_FORECAST).join(
+        backtest.run_with_features(series, table, models.MODELS, FIRST_FORECAST)
+    )
     PROCESSED.mkdir(parents=True, exist_ok=True)
-    forecasts.to_csv(PROCESSED / "backtest_baselines.csv")
+    forecasts.to_csv(PROCESSED / "backtest.csv")
 
     print(f"target: Food and Beverages, month-on-month % change, {series.index[0]} to "
           f"{series.index[-1]}")
     print(f"backtest: {len(forecasts)} one-step forecasts, {forecasts.index[0]} to "
           f"{forecasts.index[-1]}\n")
-    table = backtest.scores(forecasts)
-    reference = "seasonal_naive"
-    for name in table.index:
-        if name == reference:
-            table.loc[name, ["dm_stat", "dm_p"]] = [float("nan")] * 2
-        else:
-            table.loc[name, ["dm_stat", "dm_p"]] = backtest.diebold_mariano(
-                forecasts["actual"], forecasts[name], forecasts[reference]
+    result = backtest.scores(forecasts)
+    actual = forecasts["actual"]
+    errors = forecasts.drop(columns="actual").sub(actual, axis=0).abs()
+    for reference in ("seasonal_naive", "arima"):
+        result[f"mae_vs_{reference}"] = result["mae"] / float(result["mae"][reference])
+    for name in result.index:
+        if name != "arima":
+            statistic, p_value = backtest.diebold_mariano(
+                actual, forecasts[name], forecasts["arima"]
             )
-    table["mae_vs_naive"] = table["mae"] / float(table["mae"][reference])
-    shown = table.round(3).astype(object)
-    shown["dm_p"] = table["dm_p"].map("{:.2g}".format)
+            result.loc[name, "dm_vs_arima"] = statistic
+            result.loc[name, "p"] = p_value
+            result.loc[name, "months_won"] = float((errors[name] < errors["arima"]).sum())
+    shown = result.round(3).astype(object)
+    shown["p"] = result["p"].map("{:.2g}".format)
     print(shown.to_string())
-    print(f"\ndm_stat < 0: lower absolute error than {reference}. Units: percentage points.")
+    print("\ndm_vs_arima < 0: lower absolute error than arima. Units: percentage points.")
     return 0
 
 
@@ -80,7 +98,8 @@ def main(argv: list[str] | None = None) -> int:
     fetch.add_argument("source", choices=["mospi", "dca", "wfp"])
     fetch.set_defaults(func=_fetch)
     sub.add_parser("check", help=_check.__doc__).set_defaults(func=_check)
-    sub.add_parser("backtest", help="backtest the baselines").set_defaults(func=_backtest)
+    run = sub.add_parser("backtest", help="backtest baselines and price models")
+    run.set_defaults(func=_backtest)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)
