@@ -37,7 +37,31 @@ def load(path: Path) -> pd.DataFrame:
     keys = ["period", "market", "commodity"]
     if frame.duplicated(keys).any():
         raise ValueError("duplicate market-commodity-month rows")
-    return frame[[*keys, "unit", "price"]].sort_values(keys).reset_index(drop=True)
+    frame = frame[[*keys, "unit", "price"]].sort_values(keys).reset_index(drop=True)
+    return frame[~copied_months(frame)].reset_index(drop=True)
+
+
+def copied_months(prices: pd.DataFrame) -> pd.Series:
+    """Rows of commodity-months that repeat the previous month exactly in every market.
+
+    WFP fills some months by copying the month before (all 21 commodities in all five
+    zones in 2024-11, 2024-12, 2026-04, 2026-07 and 2026-08). Those are not observations,
+    and keeping them makes the next real month carry the whole multi-month change.
+    """
+    wide = prices.pivot(index=["commodity", "period"], columns="market", values="price")
+    previous = wide.groupby(level="commodity").shift(1)
+    same_markets = wide.notna().eq(previous.notna()).all(axis=1)
+    observed = wide.notna().sum(axis=1)
+    copied = same_markets & (observed >= 2) & (wide == previous).sum(axis=1).eq(observed)
+    # Only a copy of the month right before counts, not of a month before a gap.
+    periods = wide.index.get_level_values("period")
+    previous_period = pd.Series(periods, index=wide.index).groupby(level="commodity").shift(1)
+    copied &= previous_period.eq(pd.Series(periods - 1, index=wide.index))
+    flagged = set(copied[copied].index)
+    return pd.Series(
+        [(c, p) in flagged for c, p in zip(prices["commodity"], prices["period"], strict=True)],
+        index=prices.index,
+    )
 
 
 def national_index(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:

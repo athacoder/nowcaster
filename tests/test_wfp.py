@@ -35,6 +35,17 @@ def test_index_flags_a_month_with_no_common_market() -> None:
     assert np.exp(index["Onions"]).tolist() == pytest.approx([1.0, 1.2, 1.2])
 
 
+def test_copied_months_flags_exact_repeats_in_every_market_only() -> None:
+    prices = _prices([
+        ("2026-06", "East", 30.0), ("2026-06", "West", 29.0),
+        ("2026-07", "East", 30.0), ("2026-07", "West", 29.0),  # copy of June
+        ("2026-08", "East", 30.0), ("2026-08", "West", 31.0),  # one market moved
+        ("2026-10", "East", 30.0), ("2026-10", "West", 31.0),  # repeats a month before a gap
+    ])
+    flagged = prices.loc[wfp.copied_months(prices), "period"].astype(str).unique().tolist()
+    assert flagged == ["2026-07"]
+
+
 def test_index_continues_after_a_missing_month() -> None:
     prices = _prices([("2020-01", "Delhi", 10.0), ("2020-03", "Delhi", 20.0)])
     index, _ = wfp.national_index(prices)
