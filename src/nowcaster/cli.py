@@ -1,7 +1,10 @@
 """Nowcast India's monthly food CPI before the official release."""
 
 import argparse
-from datetime import date
+import hashlib
+import json
+import subprocess
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -10,8 +13,10 @@ from nowcaster import (
     __version__,
     backtest,
     baselines,
+    conformal,
     dca,
     features,
+    live,
     mapping,
     models,
     mospi,
@@ -22,6 +27,8 @@ from nowcaster.http import PoliteClient
 
 RAW = Path("data/raw")
 PROCESSED = Path("data/processed")
+PREDICTIONS = Path("predictions")
+WFP_FILE = RAW / "wfp" / "wfp_food_prices_ind.csv"
 FIRST_FORECAST = pd.Period("2016-01", freq="M")  # leaves five years to fit on
 
 
@@ -57,7 +64,7 @@ def _check(args: argparse.Namespace) -> int:
 
 def _backtest(args: argparse.Namespace) -> int:
     series = target.food_mom(mospi.load_2012(RAW / "mospi"), mospi.load_2024(RAW / "mospi"))
-    price_index, _ = wfp.national_index(wfp.load(RAW / "wfp" / "wfp_food_prices_ind.csv"))
+    price_index, _ = wfp.national_index(wfp.load(WFP_FILE))
     table = features.build(price_index)
     forecasts = backtest.run(series, baselines.BASELINES, FIRST_FORECAST).join(
         backtest.run_with_features(series, table, models.MODELS, FIRST_FORECAST)
@@ -86,6 +93,65 @@ def _backtest(args: argparse.Namespace) -> int:
     shown["p"] = result["p"].map("{:.2g}".format)
     print(shown.to_string())
     print("\ndm_vs_arima < 0: lower absolute error than arima. Units: percentage points.")
+
+    print(f"\nconformal intervals, built from earlier months' errors only "
+          f"(first {conformal.MIN_HISTORY} months used to start):")
+    for name in errors.columns:
+        cells = []
+        for level in conformal.LEVELS:
+            share, width, months = conformal.coverage(errors[name], level)
+            cells.append(f"{level:.0%}: covered {share:.1%}, width {width:.2f}")
+        print(f"  {name:<20} {'; '.join(cells)} ({months} months)")
+    return 0
+
+
+def _vintage() -> dict[str, str]:
+    """What the prediction was made from, so it can be reproduced or audited."""
+    package = json.loads((RAW / "wfp" / "hdx_package.json").read_text(encoding="utf-8"))
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    return {
+        "wfp_last_modified": package["result"]["last_modified"],
+        "wfp_sha256": hashlib.sha256(WFP_FILE.read_bytes()).hexdigest(),
+        "code_commit": commit,
+    }
+
+
+def _predict(args: argparse.Namespace) -> int:
+    cpi2012, cpi2024 = mospi.load_2012(RAW / "mospi"), mospi.load_2024(RAW / "mospi")
+    series = target.food_mom(cpi2012, cpi2024)
+    path = PREDICTIONS / f"{series.index[-1] + 1}.json"
+    if path.exists():
+        print(f"{path} exists; a prediction is never overwritten")
+        return 1
+    table = features.build(wfp.national_index(wfp.load(WFP_FILE))[0])
+    forecasts = pd.read_csv(PROCESSED / "backtest.csv", index_col=0)
+    forecasts.index = pd.PeriodIndex(forecasts.index, freq="M")
+    abs_errors = forecasts.drop(columns="actual").sub(forecasts["actual"], axis=0).abs()
+    food = target.division_2024(cpi2024, target.FOOD_2024)
+    try:
+        prediction = live.make(series, table, food, abs_errors)
+    except ValueError as error:
+        print(error)
+        return 1
+    prediction = {
+        "made_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        **prediction,
+        "cpi_through": str(series.index[-1]),
+        **_vintage(),
+    }
+    PREDICTIONS.mkdir(exist_ok=True)
+    path.write_text(json.dumps(prediction, indent=2) + "\n", encoding="utf-8")
+    print(path.read_text(encoding="utf-8"))
+    return 0
+
+
+def _score(args: argparse.Namespace) -> int:
+    series = target.food_mom(mospi.load_2012(RAW / "mospi"), mospi.load_2024(RAW / "mospi"))
+    table = live.record(PREDICTIONS, series)
+    table.to_csv(PREDICTIONS / "record.csv", index=False, lineterminator="\n")
+    print(table.to_string(index=False))
     return 0
 
 
@@ -100,6 +166,11 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("check", help=_check.__doc__).set_defaults(func=_check)
     run = sub.add_parser("backtest", help="backtest baselines and price models")
     run.set_defaults(func=_backtest)
+    predict = sub.add_parser("predict", help="forecast the next unreleased month")
+    predict.set_defaults(func=_predict)
+    sub.add_parser("score", help="score predictions against released CPI").set_defaults(
+        func=_score
+    )
 
     args = parser.parse_args(argv)
     result: int = args.func(args)
