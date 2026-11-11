@@ -1,0 +1,36 @@
+{
+  "made_at": "2026-11-11T04:57:11+00:00",
+  "month": "2026-10",
+  "target": "food_mom_pct",
+  "models": {
+    "arimax_vegetables": {
+      "mom": 0.838,
+      "interval_80": [
+        -0.007,
+        1.683
+      ],
+      "interval_95": [
+        -0.621,
+        2.297
+      ],
+      "yoy": 8.44
+    },
+    "arima": {
+      "mom": 1.289,
+      "interval_80": [
+        0.292,
+        2.286
+      ],
+      "interval_95": [
+        -0.916,
+        3.493
+      ],
+      "yoy": 8.93
+    }
+  },
+  "backtest_months": 129,
+  "cpi_through": "2026-09",
+  "wfp_last_modified": "2026-11-05T21:00:10.800809",
+  "wfp_sha256": "b9a197bc7cb5fa72342c960721057ecb308e0d8d1944cd616b2f8be1d2f06fe9",
+  "code_commit": "dbe297410f767dbf8becf1f763e8665de32fc9da"
+}
