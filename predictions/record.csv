@@ -1,0 +1,3 @@
+month,made_at,model,forecast,actual,abs_error,inside_80,inside_95,verified_before_release
+2026-10,2026-11-11T04:57:11+00:00,arimax_vegetables,0.838,0.8995829981516046,0.06158299815160462,True,True,False
+2026-10,2026-11-11T04:57:11+00:00,arima,1.289,0.8995829981516046,0.38941700184839534,True,True,False

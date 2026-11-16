@@ -63,9 +63,16 @@ month's CPI, with the code commit and a hash of the price file it used. A predic
 is never overwritten. `nowcaster score` compares them with the released numbers in
 `predictions/record.csv`.
 
-| Month | Made (UTC) | Forecast, m-o-m | 80% interval | Implied y-o-y | Actual |
-|---|---|---|---|---|---|
-| October 2026 | 2026-11-11 04:57 | +0.84% | -0.01% to +1.68% | 8.44% | due about 12 Nov |
+A prediction counts only if it was pushed here before the release. Publication dates are
+in `predictions/publication.csv`.
+
+| Month | Made (UTC) | Forecast, m-o-m | 80% interval | Implied y-o-y | Actual m-o-m | Actual y-o-y | Error | Verified before release |
+|---|---|---|---|---|---|---|---|---|
+| October 2026 | 2026-11-11 04:57 (local clock) | +0.84% | -0.01% to +1.68% | 8.44% | +0.90% | 8.51% | 0.06 pp | **No** |
+
+October was made before the release but first pushed on 16 November, after it. Its
+timestamp comes from a local commit and cannot be checked, so it is not part of the
+verified record. The first prediction that can be verified will be November 2026.
 
 ## Run it
 

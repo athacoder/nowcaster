@@ -53,7 +53,18 @@ def make(
 
 
 def record(predictions_dir: Path, series: pd.Series) -> pd.DataFrame:
-    """One row per prediction and model, with the actual value once it is released."""
+    """One row per prediction and model, with the actual value once it is released.
+
+    `verified_before_release` comes from `publication.csv` in the same folder: only a push
+    to a public repository before the release proves a prediction came first. A month
+    not listed there is left blank (not yet known).
+    """
+    publication_path = predictions_dir / "publication.csv"
+    verified: dict[str, bool] = {}
+    if publication_path.exists():
+        published = pd.read_csv(publication_path, dtype=str)
+        verified = dict(zip(published["month"], published["verified_before_release"] == "true",
+                            strict=True))
     rows = []
     for path in sorted(predictions_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9].json")):
         prediction = json.loads(path.read_text(encoding="utf-8"))
@@ -68,5 +79,6 @@ def record(predictions_dir: Path, series: pd.Series) -> pd.DataFrame:
                 "abs_error": abs(actual - entry["mom"]),
                 "inside_80": low80 <= actual <= high80 if not np.isnan(actual) else None,
                 "inside_95": low95 <= actual <= high95 if not np.isnan(actual) else None,
+                "verified_before_release": verified.get(str(month)),
             })
     return pd.DataFrame(rows)

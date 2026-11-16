@@ -56,8 +56,14 @@ def test_record_scores_only_released_months(tmp_path: Path) -> None:
                              "interval_95": [forecast - 1.0, forecast + 1.0]}},
         }
         (tmp_path / f"{month}.json").write_text(json.dumps(prediction), encoding="utf-8")
+    (tmp_path / "publication.csv").write_text(
+        "month,published,verified_before_release,note\n2026-09,2026-10-20,false,late\n",
+        encoding="utf-8",
+    )
     series = pd.Series([1.2], index=pd.PeriodIndex(["2026-09"], freq="M"))
     table = live.record(tmp_path, series).set_index("month")
+    assert table.loc["2026-09", "verified_before_release"] is False
+    assert table.loc["2026-10", "verified_before_release"] is None
     assert table.loc["2026-09", "abs_error"] == pytest.approx(0.2)
     assert table.loc["2026-09", "inside_80"]
     assert np.isnan(table.loc["2026-10", "actual"])
