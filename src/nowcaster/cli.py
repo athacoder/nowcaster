@@ -7,6 +7,7 @@ import subprocess
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import httpx
 import pandas as pd
 
 from nowcaster import (
@@ -14,6 +15,7 @@ from nowcaster import (
     backtest,
     baselines,
     conformal,
+    daily,
     dca,
     features,
     live,
@@ -29,6 +31,8 @@ RAW = Path("data/raw")
 PROCESSED = Path("data/processed")
 PREDICTIONS = Path("predictions")
 WFP_FILE = RAW / "wfp" / "wfp_food_prices_ind.csv"
+DCA_PAGES = Path("data/collected/dca_pages")
+DCA_TABLE = Path("data/collected/dca.csv")
 FIRST_FORECAST = pd.Period("2016-01", freq="M")  # leaves five years to fit on
 
 
@@ -39,7 +43,8 @@ def _fetch(args: argparse.Namespace) -> int:
             for name, n in mospi.fetch(RAW / "mospi", client, date.today().year).items():
                 print(f"{name}: {n} records")
         elif args.source == "dca":
-            print(f"saved {dca.fetch(RAW / 'dca', client)}")
+            print(f"saved {dca.fetch(DCA_PAGES, client)}")
+            print(f"{DCA_TABLE}: {dca.write_table(DCA_PAGES, DCA_TABLE)} rows")
         else:
             print(f"saved {wfp.fetch(RAW / 'wfp', client)}")
     finally:
@@ -51,7 +56,7 @@ def _check(args: argparse.Namespace) -> int:
     """Validate the commodity map against the CPI item list and the saved DCA pages."""
     table = mapping.load()
     found = mapping.problems(table, pd.read_csv(mapping.ITEMS_PATH))
-    on_page = set(dca.load(RAW / "dca")["commodity"])
+    on_page = set(dca.load(DCA_PAGES)["commodity"])
     unmapped = on_page - set(table["dca_commodity"])
     found += [f"DCA commodity {c!r} is not in the map" for c in unmapped]
     for problem in found:
@@ -102,6 +107,17 @@ def _backtest(args: argparse.Namespace) -> int:
             share, width, months = conformal.coverage(errors[name], level)
             cells.append(f"{level:.0%}: covered {share:.1%}, width {width:.2f}")
         print(f"  {name:<20} {'; '.join(cells)} ({months} months)")
+
+    # The live fallback rule (ARIMA when a month has no vegetable prices) was written after
+    # these errors were seen, so its score is post-hoc and is printed apart from the table.
+    has_prices = table[list(features.VEGETABLES)].notna().all(axis=1)
+    has_prices = has_prices.reindex(forecasts.index, fill_value=False)
+    fallback = forecasts[live.PRIMARY].where(has_prices, forecasts[live.REFERENCE])
+    statistic, p_value = backtest.diebold_mariano(actual, fallback, forecasts["arima"])
+    print(f"\npost-hoc, rule chosen after seeing these errors: {live.PRIMARY} with ARIMA in "
+          f"the {int((~has_prices).sum())} months without vegetable prices: MAE "
+          f"{(fallback - actual).abs().mean():.3f}, DM vs arima {statistic:.2f} "
+          f"(p {p_value:.2g})")
     return 0
 
 
@@ -121,9 +137,15 @@ def _vintage() -> dict[str, str]:
 def _predict(args: argparse.Namespace) -> int:
     cpi2012, cpi2024 = mospi.load_2012(RAW / "mospi"), mospi.load_2024(RAW / "mospi")
     series = target.food_mom(cpi2012, cpi2024)
-    path = PREDICTIONS / f"{series.index[-1] + 1}.json"
+    month = series.index[-1] + 1
+    path = PREDICTIONS / f"{month}.json"
     if path.exists():
         print(f"{path} exists; a prediction is never overwritten")
+        return 1
+    package = json.loads((RAW / "wfp" / "hdx_package.json").read_text(encoding="utf-8"))
+    if wfp.published_through(package) < month:
+        # Without this check a late price file would trigger the ARIMA fallback.
+        print(f"WFP has not published {month} yet; run `nowcaster fetch wfp` later")
         return 1
     table = features.build(wfp.national_index(wfp.load(WFP_FILE))[0])
     forecasts = pd.read_csv(PROCESSED / "backtest.csv", index_col=0)
@@ -155,6 +177,56 @@ def _score(args: argparse.Namespace) -> int:
     return 0
 
 
+def _daily(args: argparse.Namespace) -> int:
+    """One unattended run; safe to repeat. Commits and pushes are left to the caller."""
+    polite, legacy = PoliteClient(), PoliteClient(legacy_tls=True)
+    no_args = argparse.Namespace()
+    failed = False
+    try:
+        try:
+            print(f"dca: saved {dca.fetch(DCA_PAGES, polite)}")
+            print(f"dca: {DCA_TABLE} has {dca.write_table(DCA_PAGES, DCA_TABLE)} rows")
+        except (httpx.HTTPError, ValueError) as error:
+            # A lost price day must not block a prediction; the run still ends as failed.
+            print(f"dca: FAILED: {error}")
+            failed = True
+
+        def released(month: pd.Period) -> bool:
+            return mospi.released(legacy, month)
+
+        cpi_fetched = False
+        month = daily.target_month(PREDICTIONS, released)
+        wfp_through = wfp.published_through(polite.get(wfp.PACKAGE_URL).json())
+        if not released(month - 1):
+            print(f"predict: waiting for CPI for {month - 1}, which {month} is built on")
+        elif wfp_through < month:
+            print(f"predict: waiting for WFP prices for {month} (published through "
+                  f"{wfp_through})")
+        else:
+            print(f"predict: CPI for {month} is not out and WFP has it; predicting")
+            wfp.fetch(RAW / "wfp", polite)
+            mospi.fetch(RAW / "mospi", legacy, date.today().year)
+            cpi_fetched = True
+            if _backtest(no_args) or _predict(no_args):
+                return 1
+            with (PREDICTIONS / "publication.csv").open("a", encoding="utf-8") as file:
+                file.write(f"{month},{date.today()},true,committed and pushed by the daily "
+                           "run before the release; the GitHub push time is the proof\n")
+
+        to_score = [month for month in daily.unscored(PREDICTIONS) if released(month)]
+        if not to_score:
+            print("score: nothing newly released")
+        else:
+            print(f"score: CPI out for {', '.join(map(str, to_score))}")
+            if not cpi_fetched:
+                mospi.fetch(RAW / "mospi", legacy, date.today().year)
+            failed |= bool(_score(no_args))
+        return 1 if failed else 0
+    finally:
+        polite.close()
+        legacy.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="nowcaster", description=__doc__)
     parser.add_argument("--version", action="version", version=f"nowcaster {__version__}")
@@ -171,6 +243,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("score", help="score predictions against released CPI").set_defaults(
         func=_score
     )
+    sub.add_parser("daily", help=_daily.__doc__).set_defaults(func=_daily)
 
     args = parser.parse_args(argv)
     result: int = args.func(args)

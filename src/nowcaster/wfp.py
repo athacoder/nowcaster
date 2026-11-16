@@ -8,6 +8,7 @@ months instead.
 """
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -27,6 +28,16 @@ def fetch(raw_dir: Path, client: PoliteClient) -> Path:
     path = raw_dir / "wfp_food_prices_ind.csv"
     path.write_bytes(client.get(url).content)
     return path
+
+
+def published_through(package: dict[str, Any]) -> pd.Period:
+    """Last month the HDX dataset record says the file covers.
+
+    `dataset_date` looks like "[1994-01-15T00:00:00 TO 2026-10-15T23:59:59]". A copied
+    month counts as published here; `load` drops it later and `live.make` falls back.
+    """
+    end = package["result"]["dataset_date"].strip("[]").split(" TO ")[1]
+    return pd.Period(end[:7], freq="M")
 
 
 def load(path: Path) -> pd.DataFrame:

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from nowcaster import features, live
+from nowcaster import baselines, features, live
 
 
 def _inputs() -> tuple[pd.Series, pd.DataFrame, pd.Series, pd.DataFrame]:
@@ -35,11 +35,23 @@ def test_make_forecasts_the_next_month_with_intervals_and_yoy() -> None:
     assert entry["yoy"] == pytest.approx((math.exp(entry["mom"] / 100) - 1) * 100, abs=0.01)
 
 
-def test_make_refuses_without_vegetable_prices() -> None:
+def test_make_falls_back_to_arima_without_vegetable_prices() -> None:
     series, table, food, errors = _inputs()
     table.loc[pd.Period("2026-10"), "Onions"] = np.nan
-    with pytest.raises(ValueError, match="no vegetable prices"):
-        live.make(series, table, food, errors)
+    prediction = live.make(series, table, food, errors)
+    assert prediction["primary"] == live.REFERENCE
+    assert prediction["fallback"] == "no vegetable prices"
+    assert list(prediction["models"]) == [live.REFERENCE]
+    # The fallback is the plain ARIMA forecast, with ARIMA's own interval.
+    entry = prediction["models"][live.REFERENCE]
+    assert entry["mom"] == round(baselines.arima(series), 3)
+    assert entry["interval_80"] == pytest.approx([entry["mom"] - 0.7, entry["mom"] + 0.7])
+
+
+def test_make_has_no_fallback_flag_when_prices_exist() -> None:
+    series, table, food, errors = _inputs()
+    prediction = live.make(series, table, food, errors)
+    assert prediction["primary"] == live.PRIMARY and "fallback" not in prediction
 
 
 def test_make_refuses_a_stale_backtest() -> None:

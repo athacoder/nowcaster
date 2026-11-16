@@ -5,6 +5,7 @@ Only the public daily page is used. It shows today's price and eight look-back d
 fetched; saving this page daily builds the series forward.
 """
 
+import gzip
 import html as html_lib
 import re
 from pathlib import Path
@@ -63,25 +64,44 @@ def parse(page: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def fetch(raw_dir: Path, client: PoliteClient) -> Path:
-    """Save today's page under the report date it carries. Returns the file written."""
-    raw_dir.mkdir(parents=True, exist_ok=True)
+def fetch(pages_dir: Path, client: PoliteClient) -> Path:
+    """Save today's page, gzipped, under the report date it carries. Returns the file.
+
+    Kept raw so a parser fix can be replayed. The page also carries a visitor counter and
+    form state that change on every request, so an existing file is replaced only when the
+    prices differ (a weekend figure revised on Monday, for example). Reruns then write
+    nothing and make no commit.
+    """
+    pages_dir.mkdir(parents=True, exist_ok=True)
     page = client.get(URL).text
-    report_date = parse(page)["date"].max()
-    path = raw_dir / f"Dailyprices_{report_date:%Y-%m-%d}.html"
-    path.write_text(page, encoding="utf-8")
+    prices = parse(page)
+    path = pages_dir / f"Dailyprices_{prices['date'].max():%Y-%m-%d}.html.gz"
+    if not (path.exists() and parse(_read(path)).equals(prices)):
+        path.write_bytes(gzip.compress(page.encode("utf-8"), mtime=0))
     return path
 
 
-def load(raw_dir: Path) -> pd.DataFrame:
+def _read(path: Path) -> str:
+    data = path.read_bytes()
+    return (gzip.decompress(data) if path.suffix == ".gz" else data).decode("utf-8")
+
+
+def load(pages_dir: Path) -> pd.DataFrame:
     """All saved pages as one table. A later page wins where two pages give one date."""
     frames = []
-    for path in sorted(raw_dir.glob("Dailyprices_*.html")):
-        frame = parse(path.read_text(encoding="utf-8"))
-        frame["snapshot"] = path.stem.removeprefix("Dailyprices_")
+    for path in sorted(pages_dir.glob("Dailyprices_*.html*")):
+        frame = parse(_read(path))
+        frame["snapshot"] = path.name.removeprefix("Dailyprices_")[:10]
         frames.append(frame)
     if not frames:
-        raise FileNotFoundError(f"no pages in {raw_dir}; run `nowcaster fetch dca`")
+        raise FileNotFoundError(f"no pages in {pages_dir}; run `nowcaster fetch dca`")
     keys = ["date", "commodity", "price_type"]
     table = pd.concat(frames).sort_values([*keys, "snapshot"])
     return table.drop_duplicates(keys, keep="last").drop(columns="snapshot").reset_index(drop=True)
+
+
+def write_table(pages_dir: Path, csv_path: Path) -> int:
+    """Rebuild the tracked CSV from every saved page. Returns its row count."""
+    table = load(pages_dir)
+    table.to_csv(csv_path, index=False, date_format="%Y-%m-%d", lineterminator="\n")
+    return len(table)

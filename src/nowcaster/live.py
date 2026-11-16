@@ -13,6 +13,7 @@ from nowcaster.features import VEGETABLES
 
 PRIMARY = "arimax_vegetables"  # best on the backtest; chosen before any live month
 REFERENCE = "arima"
+FALLBACK = "no vegetable prices"
 
 
 def make(
@@ -21,22 +22,31 @@ def make(
     """Forecast the first month after `series` ends.
 
     `food_2024` is the base-2024 Food and beverages index; `abs_errors` holds each model's
-    absolute backtest errors by month. Refuses rather than guesses when the target month's
-    vegetable prices are missing, or when the backtest does not reach the last released
-    month.
+    absolute backtest errors by month. Refuses when the backtest does not reach the last
+    released month.
+
+    Fallback rule, written 2026-11-16 before any live month it applies to: when the target
+    month has no tomato, onion and potato prices (WFP copied or skipped the month), ARIMA
+    is the primary forecast and the file says so. The caller must first check that the
+    price file has been published for the month, or this rule would fire on a delay.
     """
     month = series.index[-1] + 1
-    if month not in table.index or table.loc[month, list(VEGETABLES)].isna().any():
-        raise ValueError(f"no vegetable prices for {month}; fetch the price file again")
+    has_prices = bool(
+        month in table.index and table.loc[month, list(VEGETABLES)].notna().all()
+    )
     if abs_errors.index[-1] != series.index[-1]:
         raise ValueError(f"backtest ends {abs_errors.index[-1]}, CPI ends {series.index[-1]}; "
                          "run `nowcaster backtest` first")
-    past = table[table.index < month]
-    point = {
-        PRIMARY: models.arimax_vegetables(series, past, table.loc[month]),
-        REFERENCE: baselines.arima(series),
-    }
-    result: dict[str, Any] = {"month": str(month), "target": "food_mom_pct", "models": {}}
+    point = {REFERENCE: baselines.arima(series)}
+    result: dict[str, Any] = {"month": str(month), "target": "food_mom_pct"}
+    if has_prices:
+        past = table[table.index < month]
+        point[PRIMARY] = models.arimax_vegetables(series, past, table.loc[month])
+        result["primary"] = PRIMARY
+    else:
+        result["primary"] = REFERENCE
+        result["fallback"] = FALLBACK
+    result["models"] = {}
     for name, forecast in point.items():
         errors = abs_errors[name].to_numpy(dtype=float)
         entry: dict[str, Any] = {"mom": round(forecast, 3)}
@@ -75,6 +85,7 @@ def record(predictions_dir: Path, series: pd.Series) -> pd.DataFrame:
             low95, high95 = entry["interval_95"]
             rows.append({
                 "month": str(month), "made_at": prediction["made_at"], "model": name,
+                "primary": name == prediction.get("primary", PRIMARY),
                 "forecast": entry["mom"], "actual": actual,
                 "abs_error": abs(actual - entry["mom"]),
                 "inside_80": low80 <= actual <= high80 if not np.isnan(actual) else None,

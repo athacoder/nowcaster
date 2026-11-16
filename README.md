@@ -36,7 +36,15 @@ What this says:
 - **The gain does not show on the new CPI base yet.** Over the nine months of 2026 the
   vegetable model's MAE is 0.620 against ARIMA's 0.371 (p = 0.15). Five of those nine
   months have no real price data (see Limits); there the model sees "no change" and
-  undershoots. `nowcaster predict` refuses to run in such a month.
+  undershoots.
+
+**Fallback rule (post-hoc).** In a month with no vegetable prices, the live prediction
+uses ARIMA instead and says so in the file (`"fallback": "no vegetable prices"`). I chose
+this rule on 16 November 2026, after seeing the errors above, so its backtest score is
+post-hoc: on the backtest extended to October 2026 (130 months), the vegetable model with
+the ARIMA fallback in the 18 months without prices scores MAE 0.474, against 0.516
+without the fallback and 0.673 for ARIMA. Treat it as a design choice, not a measured
+gain; only live months can test it.
 
 The model list and the feature list were fixed before any model was scored. Gradient
 boosting was planned only if the ridge models showed a gain; they did not, so it was not
@@ -81,11 +89,12 @@ python -m venv .venv
 .venv/Scripts/python -m pip install -e ".[dev]"   # bin/ instead of Scripts/ off Windows
 nowcaster fetch mospi     # CPI, about 5 minutes at one request every 2 seconds
 nowcaster fetch wfp       # monthly retail prices, 26 MB
-nowcaster fetch dca       # today's all-India average prices
+nowcaster fetch dca       # today's all-India average prices, into data/collected/
 nowcaster check           # validate the commodity-to-CPI map
 nowcaster backtest        # the tables above; about 4 minutes
 nowcaster predict         # next unreleased month, into predictions/
 nowcaster score           # after the release
+nowcaster daily           # all of the above, only when needed (what the workflow runs)
 ```
 
 Checks: `ruff check src tests`, `mypy`, `pytest`.

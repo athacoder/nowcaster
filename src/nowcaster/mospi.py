@@ -105,6 +105,16 @@ def fetch(raw_dir: Path, client: PoliteClient, this_year: int) -> dict[str, int]
     return counts
 
 
+def released(client: PoliteClient, month: pd.Period) -> bool:
+    """Whether the base-2024 Food and beverages index for `month` is out. One request."""
+    params: dict[str, str | int] = {
+        "base_year": "2024", "series": "Current", "state_code": 1, "sector_code": 3,
+        "division_code": 1, "year": month.year, "month_code": month.month,
+        "limit": 10, "Format": "JSON",  # the API refuses a limit below 10
+    }
+    return bool(client.get(f"{API}/getCPIData", params=params).json().get("data"))
+
+
 def _records(raw_dir: Path, name: str) -> list[Record]:
     files = sorted(raw_dir.glob(f"{name}_[0-9][0-9][0-9][0-9].json"))
     if not files:
